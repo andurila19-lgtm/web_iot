@@ -8,7 +8,7 @@ import toast, { Toaster } from 'react-hot-toast';
 export default function POS() {
   const [products, setProducts] = useState([]);
   
-  // States
+  
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem('neoPosCart');
@@ -29,10 +29,10 @@ export default function POS() {
   const [filter, setFilter] = useState('Semua');
   const [search, setSearch] = useState('');
   
-  // Form State
+  
   const [formData, setFormData] = useState({ name: '', price: '', stock: '', category: '', image: '' });
 
-  // Fetch Firestore Data Realtime
+  
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
       const productsData = snapshot.docs.map(doc => ({
@@ -41,7 +41,7 @@ export default function POS() {
       }));
       setProducts(productsData);
       
-      // Auto-remove cart items if the product was deleted from the database
+      
       setCart(prevCart => {
         const validCart = prevCart.filter(cartItem => 
           productsData.some(p => p.id === cartItem.id)
@@ -70,7 +70,7 @@ export default function POS() {
     return result;
   }, [products, filter, search]);
 
-  // Image Upload Logic (Dengan Kompresi agar muat di limit 1MB Firebase Firestore)
+  
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -106,7 +106,7 @@ export default function POS() {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
           
-          // Kompresi ke format WebP/JPEG kualitas 70%
+          
           const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); 
           setFormData({ ...formData, image: compressedBase64 });
         };
@@ -137,7 +137,7 @@ export default function POS() {
     }
   };
 
-  // Cart Logic
+  
   const addToCart = (product) => {
     if (product.stock <= 0) return toast.error('Stok produk habis!');
     

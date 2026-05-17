@@ -6,7 +6,7 @@ db.version(1).stores({
   products: '++id, name, price, stock, category, image'
 });
 
-// Seed DB if empty
+
 db.on('populate', () => {
   const mappedProducts = initialProducts.map(p => ({
     name: p.name,

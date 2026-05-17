@@ -21,7 +21,7 @@ export default function Cart() {
   };
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.11; // 11% PPN
+  const tax = subtotal * 0.11;
   const total = subtotal + tax;
 
   if (cartItems.length === 0) {
