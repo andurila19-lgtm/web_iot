@@ -1,7 +1,7 @@
 import { db } from '../firebase';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
-import { ShoppingBag, Plus, Search, Trash2, Minus, Image as ImageIcon, Home, Info, UploadCloud, CheckCircle2, Box, X } from 'lucide-react';
+import { ShoppingBag, Plus, Search, Trash2, Pencil, Minus, Image as ImageIcon, Home, Info, UploadCloud, CheckCircle2, Box, X } from 'lucide-react';
 import { formatRupiah } from '../data/products';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -24,13 +24,14 @@ export default function POS() {
   
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, id: null });
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [filter, setFilter] = useState('Semua');
   const [search, setSearch] = useState('');
   
   
-  const [formData, setFormData] = useState({ name: '', price: '', stock: '', category: '', image: '' });
+  const [formData, setFormData] = useState({ name: '', price: '', stock: '', category: '', image: '', description: '' });
 
   
   useEffect(() => {
@@ -115,22 +116,46 @@ export default function POS() {
     }
   };
 
+  const requestEditProduct = (product, e) => {
+    e.stopPropagation();
+    setFormData({ 
+      name: product.name || '', 
+      price: product.price ? String(product.price) : '', 
+      stock: product.stock ? String(product.stock) : '', 
+      category: product.category || '', 
+      image: product.image || '', 
+      description: product.description || '' 
+    });
+    setEditingId(product.id);
+    setIsAddModalOpen(true);
+  };
+
   const handleSaveProduct = async (e) => {
     e.preventDefault();
-    const { name, price, stock, category, image } = formData;
+    const { name, price, stock, category, image, description } = formData;
     if (!name || !price || !stock || !category) return toast.error('Mohon lengkapi data!');
     
     try {
-      await addDoc(collection(db, "products"), {
+      const productData = {
         name, 
         price: Number(price), 
         stock: Number(stock), 
         category, 
+        description: description || '',
         image: image || ''
-      });
-      toast.success('Produk berhasil disimpan!');
+      };
+
+      if (editingId) {
+        await updateDoc(doc(db, "products", editingId), productData);
+        toast.success('Produk berhasil diperbarui!');
+      } else {
+        await addDoc(collection(db, "products"), productData);
+        toast.success('Produk berhasil disimpan!');
+      }
+
       setIsAddModalOpen(false);
-      setFormData({ name: '', price: '', stock: '', category: '', image: '' });
+      setEditingId(null);
+      setFormData({ name: '', price: '', stock: '', category: '', image: '', description: '' });
     } catch (error) {
       console.error("Save Error:", error);
       toast.error('Error: ' + error.message);
@@ -265,7 +290,11 @@ export default function POS() {
           
           <div className="flex items-center gap-3 sm:gap-5 ml-4 shrink-0">
             <button 
-              onClick={() => setIsAddModalOpen(true)} 
+              onClick={() => {
+                setEditingId(null);
+                setFormData({ name: '', price: '', stock: '', category: '', image: '', description: '' });
+                setIsAddModalOpen(true);
+              }} 
               className="hidden md:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-md shadow-indigo-600/20 active:scale-95"
             >
               <Plus className="w-4 h-4" /> 
@@ -309,14 +338,23 @@ export default function POS() {
               {filteredProducts.map(product => (
                 <div key={product.id} className="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative flex flex-col">
                   
-                  {/* Delete Button (Hover on Desktop, Always Visible on Mobile) */}
-                  <button 
-                    onClick={(e) => requestDeleteProduct(product.id, e)}
-                    className="absolute top-2 right-2 sm:top-5 sm:right-5 bg-white/90 backdrop-blur text-red-500 p-1.5 sm:p-2 rounded-full z-10 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all shadow-md hover:bg-red-50 hover:scale-110"
-                    title="Hapus"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {/* Action Buttons (Hover on Desktop, Always Visible on Mobile) */}
+                  <div className="absolute top-2 right-2 sm:top-5 sm:right-5 flex flex-col gap-2 z-10 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all">
+                    <button 
+                      onClick={(e) => requestEditProduct(product, e)}
+                      className="bg-white/90 backdrop-blur text-indigo-500 p-1.5 sm:p-2 rounded-full shadow-md hover:bg-indigo-50 hover:scale-110"
+                      title="Edit"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={(e) => requestDeleteProduct(product.id, e)}
+                      className="bg-white/90 backdrop-blur text-red-500 p-1.5 sm:p-2 rounded-full shadow-md hover:bg-red-50 hover:scale-110"
+                      title="Hapus"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                   
                   {/* Image */}
                   <div className="aspect-square rounded-2xl bg-slate-50 relative overflow-hidden mb-4 shrink-0 border border-slate-50">
@@ -342,6 +380,9 @@ export default function POS() {
                       <h3 className="font-bold text-slate-800 text-xs sm:text-sm leading-snug line-clamp-2 mb-2">
                         {product.name}
                       </h3>
+                      {product.description && (
+                        <p className="text-xs text-slate-500 line-clamp-2 mb-2">{product.description}</p>
+                      )}
                       
                       <div className="mt-auto flex items-end justify-between">
                         <div className="font-black text-slate-900 text-sm sm:text-lg">
@@ -381,7 +422,11 @@ export default function POS() {
         </button>
         <div className="w-full flex justify-center -mt-6">
           <button 
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setEditingId(null);
+              setFormData({ name: '', price: '', stock: '', category: '', image: '', description: '' });
+              setIsAddModalOpen(true);
+            }}
             className="w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/30 border-4 border-slate-50 active:scale-95 transition-transform"
           >
             <Plus className="w-6 h-6" />
@@ -477,8 +522,8 @@ export default function POS() {
           <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
             
             <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-              <h2 className="text-xl font-extrabold text-slate-900">Tambah Produk Baru</h2>
-              <button onClick={() => setIsAddModalOpen(false)} className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+              <h2 className="text-xl font-extrabold text-slate-900">{editingId ? 'Edit Produk' : 'Tambah Produk Baru'}</h2>
+              <button onClick={() => { setIsAddModalOpen(false); setEditingId(null); }} className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -505,6 +550,11 @@ export default function POS() {
                 <input required type="text" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" placeholder="Contoh: Alat Berat, Pakaian" />
               </div>
               
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Deskripsi Produk (Opsional)</label>
+                <textarea rows="3" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-white border border-slate-200 rounded-xl p-3.5 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm" placeholder="Tambahkan detail produk seperti spesifikasi, ukuran, atau informasi lainnya..."></textarea>
+              </div>
+
               <div>
                 <div className="flex items-baseline justify-between mb-2">
                   <label className="block text-sm font-bold text-slate-700">Upload Foto Produk</label>
@@ -533,9 +583,9 @@ export default function POS() {
               </div>
               
               <div className="pt-4 sm:pt-6 flex gap-3 sm:gap-4 shrink-0 border-t border-slate-200 mt-4 sm:mt-6">
-                <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3 sm:py-4 bg-white border border-slate-200 text-slate-700 rounded-xl sm:rounded-2xl font-bold hover:bg-slate-50 hover:text-slate-900 transition-colors text-sm sm:text-base">Batalkan</button>
+                <button type="button" onClick={() => { setIsAddModalOpen(false); setEditingId(null); }} className="flex-1 py-3 sm:py-4 bg-white border border-slate-200 text-slate-700 rounded-xl sm:rounded-2xl font-bold hover:bg-slate-50 hover:text-slate-900 transition-colors text-sm sm:text-base">Batalkan</button>
                 <button type="submit" className="flex-1 py-3 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/30 flex justify-center items-center gap-2 text-sm sm:text-base">
-                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> Simpan Produk
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> {editingId ? 'Simpan Perubahan' : 'Simpan Produk'}
                 </button>
               </div>
             </form>
