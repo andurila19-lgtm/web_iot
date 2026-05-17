@@ -422,27 +422,32 @@ export default function POS() {
                 </div>
               ) : (
                 cart.map(item => (
-                  <div key={item.id} className="flex gap-3 sm:gap-4 group relative">
-                    <img src={item.image || 'https://via.placeholder.com/150'} alt={item.name} className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 shrink-0" />
-                    <div className="flex-1 flex flex-col py-1">
-                      <h4 className="font-bold text-xs sm:text-sm text-slate-800 line-clamp-2 pr-6 leading-tight">{item.name}</h4>
-                      <div className="text-indigo-600 font-extrabold text-xs sm:text-sm mt-1">{formatRupiah(item.price)}</div>
+                  <div key={item.id} className="bg-white p-3 sm:p-4 border border-slate-100 rounded-xl sm:rounded-2xl flex gap-3 sm:gap-4 shadow-sm group relative">
+                    <img src={item.image || 'https://via.placeholder.com/150'} alt={item.name} className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 shrink-0" />
+                    
+                    <div className="flex-1 flex flex-col min-w-0">
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className="font-bold text-sm sm:text-base text-slate-800 line-clamp-2 leading-tight">{item.name}</h4>
+                        <button onClick={() => requestRemoveFromCart(item.id)} className="text-slate-300 hover:text-red-500 transition-colors shrink-0 p-1 -mt-1 -mr-1" title="Hapus dari Keranjang">
+                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      </div>
                       
-                      <div className="flex items-center gap-3 mt-auto">
+                      <div className="text-indigo-600 font-extrabold text-sm sm:text-base mt-1 mb-2">{formatRupiah(item.price)}</div>
+                      
+                      <div className="flex items-center justify-between mt-auto">
+                        <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider">Kuantitas</span>
                         <div className="flex items-center bg-slate-100 rounded-lg border border-slate-200">
-                          <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900">
+                          <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 active:bg-slate-200 rounded-l-lg transition-colors">
                             <Minus className="w-3 h-3 font-bold" />
                           </button>
-                          <span className="text-sm font-bold w-6 text-center text-slate-900">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900">
+                          <span className="text-sm font-bold w-8 text-center text-slate-900">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 active:bg-slate-200 rounded-r-lg transition-colors">
                             <Plus className="w-3 h-3 font-bold" />
                           </button>
                         </div>
                       </div>
                     </div>
-                    <button onClick={() => requestRemoveFromCart(item.id)} className="absolute top-1 right-0 text-slate-300 hover:text-red-500 p-1 transition-colors" title="Hapus dari Keranjang">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 ))
               )}
