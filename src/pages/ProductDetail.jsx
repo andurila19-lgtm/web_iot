@@ -134,7 +134,7 @@ export default function ProductDetail() {
                   <ShoppingCart className="w-5 h-5" />
                   Tambah ke Keranjang
                 </button>
-                <button className="p-4 border border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50 text-gray-600 hover:text-[var(--color-brand)] rounded-xl transition-all">
+                <button title="Wishlist" className="p-4 border border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50 text-gray-600 hover:text-[var(--color-brand)] rounded-xl transition-all">
                   <Heart className="w-6 h-6" />
                 </button>
                 <button className="p-4 border border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50 text-gray-600 hover:text-[var(--color-brand)] rounded-xl transition-all">
@@ -184,7 +184,7 @@ export default function ProductDetail() {
           <div className="py-8 grid lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-6">
               <h3 className="text-2xl font-bold text-gray-900">Deskripsi Lengkap</h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-gray-600 leading-relaxed whitespace-pre-line">
                 {product.fullDescription}
               </p>
               
@@ -201,7 +201,7 @@ export default function ProductDetail() {
               </ul>
             </div>
             
-            <div>
+            <div className="space-y-6">
               <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
                 <h3 className="font-bold text-gray-900 mb-4">Estimasi Pengiriman</h3>
                 <div className="space-y-4">
@@ -218,6 +218,35 @@ export default function ProductDetail() {
                     <span className="font-medium text-gray-900">3 - 7 Hari</span>
                   </div>
                 </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                <h3 className="font-bold text-gray-900 mb-4">Jenis Layanan Produk</h3>
+                <ul className="space-y-3 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <div className="mt-1 w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600 font-bold text-[10px]">✓</div>
+                    <span>Instalasi & Panduan Penggunaan</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="mt-1 w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600 font-bold text-[10px]">✓</div>
+                    <span>Konsultasi Teknis 24/7</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="mt-1 w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600 font-bold text-[10px]">✓</div>
+                    <span>Garansi Perbaikan & Ganti Baru</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                <h3 className="font-bold text-gray-900 mb-4">Cara Pembelian</h3>
+                <ol className="space-y-3 text-sm text-gray-600 list-decimal list-inside">
+                  <li>Pilih jumlah produk</li>
+                  <li>Klik "Tambah ke Keranjang"</li>
+                  <li>Buka keranjang dan checkout</li>
+                  <li>Pilih metode pembayaran</li>
+                  <li>Selesaikan pembayaran</li>
+                </ol>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { db } from '../firebase';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
-import { ShoppingBag, Plus, Search, Trash2, Pencil, Minus, Image as ImageIcon, Home, Info, UploadCloud, CheckCircle2, Box, X } from 'lucide-react';
+import { ShoppingBag, Plus, Search, Trash2, Pencil, Minus, Image as ImageIcon, Home, Info, UploadCloud, CheckCircle2, Box, X, Heart } from 'lucide-react';
 import { formatRupiah } from '../data/products';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -25,13 +25,19 @@ export default function POS() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [detailModalProduct, setDetailModalProduct] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, id: null });
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [filter, setFilter] = useState('Semua');
   const [search, setSearch] = useState('');
   
   
-  const [formData, setFormData] = useState({ name: '', price: '', stock: '', category: '', image: '', description: '' });
+  const emptyForm = { 
+    name: '', price: '', stock: '', category: '', image: '', description: '',
+    shipping: { reguler: true, instan: true, kargo: true },
+    services: { instalasi: true, konsultasi: true, garansi: true }
+  };
+  const [formData, setFormData] = useState(emptyForm);
 
   
   useEffect(() => {
@@ -124,7 +130,9 @@ export default function POS() {
       stock: product.stock ? String(product.stock) : '', 
       category: product.category || '', 
       image: product.image || '', 
-      description: product.description || '' 
+      description: product.description || '',
+      shipping: product.shipping || { reguler: true, instan: true, kargo: true },
+      services: product.services || { instalasi: true, konsultasi: true, garansi: true }
     });
     setEditingId(product.id);
     setIsAddModalOpen(true);
@@ -132,7 +140,7 @@ export default function POS() {
 
   const handleSaveProduct = async (e) => {
     e.preventDefault();
-    const { name, price, stock, category, image, description } = formData;
+    const { name, price, stock, category, image, description, shipping, services } = formData;
     if (!name || !price || !stock || !category) return toast.error('Mohon lengkapi data!');
     
     try {
@@ -142,7 +150,9 @@ export default function POS() {
         stock: Number(stock), 
         category, 
         description: description || '',
-        image: image || ''
+        image: image || '',
+        shipping,
+        services
       };
 
       if (editingId) {
@@ -155,7 +165,7 @@ export default function POS() {
 
       setIsAddModalOpen(false);
       setEditingId(null);
-      setFormData({ name: '', price: '', stock: '', category: '', image: '', description: '' });
+      setFormData(emptyForm);
     } catch (error) {
       console.error("Save Error:", error);
       toast.error('Error: ' + error.message);
@@ -292,7 +302,7 @@ export default function POS() {
             <button 
               onClick={() => {
                 setEditingId(null);
-                setFormData({ name: '', price: '', stock: '', category: '', image: '', description: '' });
+                setFormData(emptyForm);
                 setIsAddModalOpen(true);
               }} 
               className="hidden md:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-md shadow-indigo-600/20 active:scale-95"
@@ -336,7 +346,7 @@ export default function POS() {
             {/* Product Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 pb-24 md:pb-8">
               {filteredProducts.map(product => (
-                <div key={product.id} className="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative flex flex-col">
+                <div key={product.id} onClick={() => setDetailModalProduct(product)} className="bg-white rounded-3xl p-3 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative flex flex-col cursor-pointer">
                   
                   {/* Action Buttons (Hover on Desktop, Always Visible on Mobile) */}
                   <div className="absolute top-2 right-2 sm:top-5 sm:right-5 flex flex-col gap-2 z-10 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all">
@@ -388,13 +398,22 @@ export default function POS() {
                         <div className="font-black text-slate-900 text-sm sm:text-lg">
                           {formatRupiah(product.price)}
                         </div>
-                        <button 
-                          onClick={() => addToCart(product)}
-                          disabled={product.stock <= 0}
-                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-colors disabled:opacity-50 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed shrink-0"
-                        >
-                          <Plus className="w-4 h-4 sm:w-5 sm:h-5 font-bold" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); toast.success('Ditambahkan ke Wishlist!'); }}
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-pink-50 text-pink-500 flex items-center justify-center hover:bg-pink-500 hover:text-white transition-colors shrink-0"
+                            title="Wishlist"
+                          >
+                            <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                            disabled={product.stock <= 0}
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-colors disabled:opacity-50 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed shrink-0"
+                          >
+                            <Plus className="w-4 h-4 sm:w-5 sm:h-5 font-bold" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                 </div>
@@ -581,6 +600,71 @@ export default function POS() {
                   />
                 </div>
               </div>
+
+              {/* Tambahan: Opsi Pengiriman & Jenis Layanan */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-3">Opsi Pengiriman</label>
+                  <div className="flex flex-wrap gap-4">
+                    {Object.keys(formData.shipping).map(key => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.shipping[key]} 
+                          onChange={e => setFormData({
+                            ...formData, 
+                            shipping: { ...formData.shipping, [key]: e.target.checked }
+                          })}
+                          className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" 
+                        />
+                        <span className="text-sm font-medium text-slate-700 capitalize">{key}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-3">Jenis Layanan Produk</label>
+                  <div className="space-y-3">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={formData.services.instalasi} 
+                        onChange={e => setFormData({
+                          ...formData, 
+                          services: { ...formData.services, instalasi: e.target.checked }
+                        })}
+                        className="w-4 h-4 mt-0.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" 
+                      />
+                      <span className="text-sm font-medium text-slate-700 leading-tight">Instalasi & Panduan Penggunaan</span>
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={formData.services.konsultasi} 
+                        onChange={e => setFormData({
+                          ...formData, 
+                          services: { ...formData.services, konsultasi: e.target.checked }
+                        })}
+                        className="w-4 h-4 mt-0.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" 
+                      />
+                      <span className="text-sm font-medium text-slate-700 leading-tight">Konsultasi Teknis 24/7</span>
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={formData.services.garansi} 
+                        onChange={e => setFormData({
+                          ...formData, 
+                          services: { ...formData.services, garansi: e.target.checked }
+                        })}
+                        className="w-4 h-4 mt-0.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500" 
+                      />
+                      <span className="text-sm font-medium text-slate-700 leading-tight">Garansi Perbaikan & Ganti Baru</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
               
               <div className="pt-4 sm:pt-6 flex gap-3 sm:gap-4 shrink-0 border-t border-slate-200 mt-4 sm:mt-6">
                 <button type="button" onClick={() => { setIsAddModalOpen(false); setEditingId(null); }} className="flex-1 py-3 sm:py-4 bg-white border border-slate-200 text-slate-700 rounded-xl sm:rounded-2xl font-bold hover:bg-slate-50 hover:text-slate-900 transition-colors text-sm sm:text-base">Batalkan</button>
@@ -641,6 +725,119 @@ export default function POS() {
               >
                 {confirmModal.type === 'checkout' ? 'Ya, Bayar' : 'Ya, Hapus'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DETAIL MODAL */}
+      {detailModalProduct && (
+        <div className="fixed inset-0 z-[80] flex justify-center items-end sm:items-center p-0 sm:p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setDetailModalProduct(null)}></div>
+          <div className="relative w-full sm:w-auto max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300 overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white sticky top-0 z-10">
+              <h2 className="text-xl font-extrabold text-slate-900">Detail Produk</h2>
+              <button onClick={() => setDetailModalProduct(null)} className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="p-4 sm:p-6 overflow-y-auto bg-slate-50/50">
+              <div className="flex flex-col sm:flex-row gap-6 mb-8">
+                <div className="w-full sm:w-1/2 shrink-0">
+                  <div className="aspect-square rounded-2xl bg-slate-50 border border-slate-100 overflow-hidden">
+                    {detailModalProduct.image ? (
+                      <img src={detailModalProduct.image} alt={detailModalProduct.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300"><ImageIcon className="w-16 h-16" /></div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 flex flex-col justify-center">
+                  <span className="px-3 py-1 w-max bg-indigo-100 text-indigo-600 text-[10px] font-bold rounded-full uppercase tracking-wider mb-2">
+                    {detailModalProduct.category}
+                  </span>
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight mb-2">
+                    {detailModalProduct.name}
+                  </h3>
+                  <div className="text-3xl font-black text-indigo-600 mb-4">
+                    {formatRupiah(detailModalProduct.price)}
+                  </div>
+                  <div className="text-slate-500 text-sm mb-6 whitespace-pre-line leading-relaxed">
+                    {detailModalProduct.description || "Tidak ada deskripsi."}
+                  </div>
+                  <div className="flex gap-3 mt-auto">
+                    <button 
+                      onClick={() => { toast.success('Ditambahkan ke Wishlist!'); }}
+                      className="w-12 h-12 bg-pink-50 text-pink-500 rounded-xl flex items-center justify-center shadow-sm border border-pink-100 hover:bg-pink-500 hover:text-white transition-all shrink-0"
+                      title="Wishlist"
+                    >
+                      <Heart className="w-6 h-6" />
+                    </button>
+                    <button 
+                      onClick={() => { addToCart(detailModalProduct); setDetailModalProduct(null); }}
+                      disabled={detailModalProduct.stock <= 0}
+                      className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/30 disabled:opacity-50 disabled:bg-slate-300 disabled:shadow-none"
+                    >
+                      <Plus className="w-5 h-5" /> Tambah ke Keranjang
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                  <h4 className="font-bold text-slate-900 mb-3 flex items-center gap-2"><Info className="w-4 h-4 text-indigo-500"/> Informasi Tambahan</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="block text-slate-400 font-medium mb-1">Sisa Stok</span>
+                      <span className="font-bold text-slate-800">{detailModalProduct.stock} unit</span>
+                    </div>
+                    <div>
+                      <span className="block text-slate-400 font-medium mb-1">Opsi Pengiriman</span>
+                      <span className="font-bold text-slate-800">
+                        {(() => {
+                          const s = detailModalProduct.shipping || { reguler: true, instan: true, kargo: true };
+                          const opts = [];
+                          if (s.reguler) opts.push("Reguler");
+                          if (s.instan) opts.push("Instan");
+                          if (s.kargo) opts.push("Kargo");
+                          return opts.length > 0 ? opts.join(" / ") : "Tidak Ada";
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                  <h4 className="font-bold text-slate-900 mb-3">Jenis Layanan Produk</h4>
+                  <ul className="space-y-2 text-sm text-slate-600">
+                    {(detailModalProduct.services?.instalasi !== false) && (
+                      <li className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">✓</div> Instalasi & Panduan Penggunaan</li>
+                    )}
+                    {(detailModalProduct.services?.konsultasi !== false) && (
+                      <li className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">✓</div> Konsultasi Teknis 24/7</li>
+                    )}
+                    {(detailModalProduct.services?.garansi !== false) && (
+                      <li className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold shrink-0">✓</div> Garansi Perbaikan & Ganti Baru</li>
+                    )}
+                    {(!detailModalProduct.services || (detailModalProduct.services?.instalasi === false && detailModalProduct.services?.konsultasi === false && detailModalProduct.services?.garansi === false)) && (
+                      <li className="text-slate-400 italic">Tidak ada layanan tambahan</li>
+                    )}
+                  </ul>
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                  <h4 className="font-bold text-slate-900 mb-3">Cara Pembelian</h4>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600">
+                    <li>Klik "Tambah ke Keranjang"</li>
+                    <li>Buka keranjang dan periksa pesanan</li>
+                    <li>Pilih metode pembayaran yang tersedia</li>
+                    <li>Selesaikan pembayaran</li>
+                  </ol>
+                </div>
+              </div>
             </div>
           </div>
         </div>

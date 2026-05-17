@@ -90,6 +90,29 @@ export const products = [
       "Baterai ganda untuk durasi terbang ekstra"
     ],
     isBestSeller: true,
+  },
+  {
+    id: 5,
+    name: "Sistem Irigasi Cerdas (IoT)",
+    price: 3500000,
+    originalPrice: 4000000,
+    discount: 12,
+    rating: 4.9,
+    reviews: 45,
+    sold: 150,
+    stock: 20,
+    category: "Smart Farming",
+    image: "https://images.unsplash.com/photo-1592424001844-3996515b6d57?auto=format&fit=crop&q=80&w=800",
+    description: "Sistem irigasi tetes berbasis IoT, sebuah alat penyiram tanaman otomatis berbasis sensor.",
+    fullDescription: `1. Nama Produk dan Fungsinya\nSelamat pagi. Produk yang kami perkenalkan adalah Sistem irigasi tetes berbasis IoT, sebuah alat penyiram tanaman otomatis berbasis sensor.\nFungsi utamanya adalah mengelola pengairan lahan secara mandiri. Alat ini dilengkapi sensor yang bisa 'membaca' apakah tanah sedang kering atau basah. Jika tanah butuh air, sistem akan menyalakan pompa sendiri, dan akan mati otomatis jika kebutuhan air tanaman sudah tercukupi. Jadi, tanaman selalu mendapatkan air dalam jumlah yang pas, tidak kurang dan tidak lebih.\n\n2. Siapa Penggunanya?\nTeknologi ini dirancang untuk siapa saja yang bergerak di bidang pertanian modern, antara lain:\n1. Pemilik Perkebunan: Yang memiliki lahan luas dan ingin memantau kondisi tanaman tanpa harus berkeliling setiap saat.\n2. Pengusaha Smart Farming: Seperti pengelola hidroponik atau rumah kaca (greenhouse) yang membutuhkan ketepatan nutrisi dan air.\n3. Kelompok Tani: Untuk membantu anggota kelompok meningkatkan hasil panen dengan biaya operasional yang lebih murah.\n4. Hobiis Tanaman: Individu yang ingin kebunnya tetap terawat meskipun mereka sedang sibuk atau berada di luar kota.\n\n3. Keunggulan dibanding Cara Lama (Konvensional)\nMengapa sistem ini lebih baik daripada cara menyiram manual atau sekadar pakai pengatur waktu (timer) biasa?\n1. Bekerja Berdasarkan Data, Bukan Tebakan: Kalau cara lama, kita menyiram berdasarkan jam. Di sistem ini, jika hari sedang hujan dan tanah masih basah, alat tidak akan menyiram. Ini jauh lebih akurat bagi kesehatan tanaman.\n2. Hemat Air dan Listrik: Karena hanya menyala saat dibutuhkan, penggunaan air dan listrik jadi lebih irit. Biaya bulanan pun bisa ditekan hingga sekitar 30% sampai 40%.\n3. Pantau dari Mana Saja: Jika cara lama mengharuskan kita ada di lokasi, sistem IoT ini bisa dipantau lewat HP. Bapak/Ibu akan dapat laporan langsung kalau air sedang mengalir atau jika ada kendala pada pompa, jadi masalah bisa cepat diatasi.`,
+    features: [
+      "Sensor kelembapan tanah yang presisi",
+      "Pompa menyala & mati otomatis",
+      "Pantau lewat HP dari mana saja",
+      "Hemat air dan listrik hingga 40%",
+      "Bekerja berdasarkan data real-time"
+    ],
+    isBestSeller: true,
   }
 ];
 
