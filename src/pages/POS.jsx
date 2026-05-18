@@ -1,6 +1,5 @@
-import { db, auth } from '../firebase';
+import { db } from '../firebase';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, writeBatch, query, where, orderBy } from 'firebase/firestore';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { useState, useMemo, useEffect } from 'react';
 import { 
   ShoppingBag, Plus, Search, Trash2, Pencil, Minus, Image as ImageIcon, 
@@ -52,11 +51,6 @@ export default function POS() {
 
   // Firebase Auth State (Login feature removed/bypassed)
   const [currentUser, setCurrentUser] = useState({ email: 'guest@smartfarming.id', uid: 'guest_user_uid' });
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [authError, setAuthError] = useState('');
   
   // QRIS Payment Modal State
   const [isQRISModalOpen, setIsQRISModalOpen] = useState(false);
@@ -89,11 +83,6 @@ export default function POS() {
     status: 'Online'
   };
   const [formData, setFormData] = useState(emptyForm);
-
-  // Auth Listener bypassed
-  useEffect(() => {
-    setAuthLoading(false);
-  }, []);
 
   // Fetch Products
   useEffect(() => {
@@ -222,49 +211,7 @@ export default function POS() {
     return `${m}:${s}`;
   };
 
-  // Auth Handlers
-  const handleAuthSubmit = async (e) => {
-    e.preventDefault();
-    setAuthError('');
-    if (!email || !password) {
-      setAuthError('Email dan password harus diisi');
-      return;
-    }
-    try {
-      if (authMode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
-        toast.success('Koneksi aman terverifikasi!');
-        setActiveTab('home');
-      } else {
-        await createUserWithEmailAndPassword(auth, email, password);
-        toast.success('Pendaftaran akun cloud sukses!');
-        setActiveTab('home');
-      }
-      setEmail('');
-      setPassword('');
-    } catch (err) {
-      console.error(err);
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setAuthError('Email atau password salah. Verifikasi gagal.');
-      } else if (err.code === 'auth/email-already-in-use') {
-        setAuthError('Email sudah terdaftar dalam broker Cloud.');
-      } else if (err.code === 'auth/weak-password') {
-        setAuthError('Password terlalu lemah. Minimal 6 karakter.');
-      } else {
-        setAuthError(err.message);
-      }
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      toast.success('Broker terputus aman.');
-      setActiveTab('home');
-    } catch (err) {
-      toast.error('Gagal memutus koneksi.');
-    }
-  };
+  // Auth Handlers completely bypassed
 
   // Contact Us Submission
   const handleContactSubmit = async (e) => {
@@ -430,12 +377,6 @@ export default function POS() {
 
    const requestCheckout = () => {
     if (cart.length === 0) return;
-    if (!currentUser) {
-      toast.error('Otorisasi diperlukan! Silakan login untuk melakukan transaksi pembelian.');
-      setActiveTab('login');
-      setIsCartOpen(false);
-      return;
-    }
     setConfirmModal({ isOpen: true, type: 'checkout', id: null });
   };
 
@@ -546,7 +487,7 @@ export default function POS() {
         </div>
 
         {/* Center: Desktop Navigation Menus */}
-        <nav className="hidden lg:flex items-center gap-1 xl:gap-2 mx-4">
+        <nav className="hidden md:flex items-center gap-1 xl:gap-2 mx-4">
           <button 
             onClick={() => { setActiveTab('home'); }} 
             className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs tracking-wider transition-all duration-300 ${activeTab === 'home' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 shadow-[0_0_15px_rgba(16,185,129,0.05)]' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white border border-transparent'}`}
@@ -1363,142 +1304,7 @@ export default function POS() {
             </div>
           )}
 
-          {/* TAB 5: AUTHENTICATION PANEL */}
-          {activeTab === 'login' && (
-            <div className="max-w-md mx-auto pb-10">
-              {authLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-[#06060a] border border-[#1f1f2e] rounded-3xl shadow-xl">
-                  <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                  <p className="text-[#a1a1aa] font-bold text-xs">Menghubungkan ke secure MQTT server...</p>
-                </div>
-              ) : currentUser ? (
-                /* Profile dashboard */
-                <div className="bg-[#06060a] rounded-3xl p-6 sm:p-8 border border-[#1f1f2e] shadow-xl text-center relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/3 rounded-full blur-[30px] pointer-events-none"></div>
-                  
-                  <div className="w-20 h-20 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-3xl mx-auto mb-4 border border-emerald-500/25 shadow-inner">
-                    {currentUser.email[0].toUpperCase()}
-                  </div>
-                  
-                  <h3 className="text-xl font-display font-extrabold text-white mb-1">Broker Terkoneksi Aman</h3>
-                  <p className="text-xs font-bold text-emerald-400 mb-6">{currentUser.email}</p>
-
-                  <div className="bg-black/40 rounded-2xl p-4 text-left border border-[#1f1f2e] mb-6 space-y-3">
-                    <div className="flex justify-between items-center text-[10px]">
-                      <span className="text-[#52525b] font-black uppercase tracking-wider">Broker UID</span>
-                      <span className="font-mono text-[#a1a1aa] truncate max-w-[200px]">{currentUser.uid}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[10px]">
-                      <span className="text-[#52525b] font-black uppercase tracking-wider">Status Server</span>
-                      <span className="font-black text-emerald-500 uppercase flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>Online</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <button 
-                      onClick={() => setActiveTab('history')} 
-                      className="py-3 bg-[#0a0a0f] hover:bg-white/5 text-white font-bold rounded-xl text-xs tracking-wider border border-[#1f1f2e] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <History className="w-4 h-4 text-emerald-400" /> Riwayat Deploy
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('home')} 
-                      className="py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Layers className="w-4 h-4 font-bold" /> Marketplace
-                    </button>
-                  </div>
-
-                  <button 
-                    onClick={handleLogout} 
-                    className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <LogOut className="w-4 h-4" /> PUTUS KONEKSI BROKER
-                  </button>
-                </div>
-              ) : (
-                /* Login / Signup form */
-                <div className="bg-[#06060a] rounded-3xl p-6 sm:p-8 border border-[#1f1f2e] shadow-xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/3 rounded-full blur-[30px] pointer-events-none"></div>
-
-                  {/* Broker Credentials Info box */}
-                  <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 mb-6">
-                    <h4 className="font-bold text-emerald-400 text-xs mb-1.5 flex items-center gap-1.5 uppercase tracking-wide">
-                      <Info className="w-4 h-4" />
-                      Info Otorisasi Broker Cloud
-                    </h4>
-                    <p className="text-[11px] text-[#a1a1aa] leading-relaxed mb-3">
-                      Anda dapat melakukan pendaftaran broker cloud baru secara instan, atau gunakan kredensial demo developer berikut untuk login cepat:
-                    </p>
-                    <div className="bg-black/40 rounded-xl p-2.5 text-[10px] font-semibold text-[#a1a1aa] border border-emerald-500/10 space-y-1 select-all font-mono">
-                      <div>Email: <span className="font-bold text-emerald-400">admin@civilsmart.id</span></div>
-                      <div>Pass : <span className="font-bold text-emerald-400">admin123</span></div>
-                    </div>
-                  </div>
-
-                  <h2 className="text-xl font-display font-black text-white text-center mb-6 uppercase tracking-wider">
-                    {authMode === 'login' ? 'Masuk Cloud Broker' : 'Daftar Broker Baru'}
-                  </h2>
-
-                  {authError && (
-                    <div className="bg-red-500/10 text-red-500 text-xs font-bold p-3.5 rounded-xl border border-red-500/20 mb-5 text-center">
-                      {authError}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleAuthSubmit} className="space-y-5">
-                    <div>
-                      <label className="block text-[10px] font-black text-[#52525b] uppercase tracking-wider mb-2">Alamat Email Broker</label>
-                      <div className="relative">
-                        <Mail className="absolute left-4 top-3.5 w-4 h-4 text-emerald-400" />
-                        <input 
-                          required 
-                          type="email" 
-                          value={email}
-                          onChange={e => setEmail(e.target.value)}
-                          className="w-full bg-[#0a0a0f] border border-[#1f1f2e] focus:border-emerald-500/50 rounded-xl py-3 pl-12 pr-4 text-white font-medium text-xs placeholder-[#52525b] outline-none transition-all duration-300" 
-                          placeholder="email@contoh.com" 
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black text-[#52525b] uppercase tracking-wider mb-2">Password Broker</label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-3.5 w-4 h-4 text-emerald-400" />
-                        <input 
-                          required 
-                          type="password" 
-                          value={password}
-                          onChange={e => setPassword(e.target.value)}
-                          className="w-full bg-[#0a0a0f] border border-[#1f1f2e] focus:border-emerald-500/50 rounded-xl py-3 pl-12 pr-4 text-white font-medium text-xs placeholder-[#52525b] outline-none transition-all duration-300" 
-                          placeholder="Minimal 6 karakter" 
-                        />
-                      </div>
-                    </div>
-
-                    <button 
-                      type="submit" 
-                      className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs tracking-wider rounded-xl transition-all duration-300 shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <CheckCircle2 className="w-4 h-4 font-black" />
-                      {authMode === 'login' ? 'VERIFIKASI MASUK' : 'BUAT AKUN BROKER'}
-                    </button>
-                  </form>
-
-                  <div className="mt-6 pt-6 border-t border-[#1f1f2e]/60 text-center">
-                    <button 
-                      type="button"
-                      onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}
-                      className="text-emerald-400 hover:text-emerald-300 font-bold text-xs tracking-wide uppercase"
-                    >
-                      {authMode === 'login' ? 'Belum punya broker? Daftar Baru' : 'Sudah punya broker? Masuk Sini'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {/* TAB 5: AUTHENTICATION PANEL BYPASSED */}
 
           {/* GLOBAL FUTURISTIC ENTERPRISE FOOTER */}
           <footer className="mt-20 border-t border-[#1f1f2e]/60 bg-[#06060a]/80 backdrop-blur-2xl rounded-t-3xl pt-16 pb-24 sm:pb-16 px-6 sm:px-12 relative z-10">
@@ -1647,25 +1453,12 @@ export default function POS() {
 
         <button 
           onClick={() => {
-            if (!currentUser) {
-              toast.error('Otorisasi Akun Diperlukan!');
-              setActiveTab('login');
-            } else {
-              setActiveTab('history');
-            }
+            setActiveTab('history');
           }} 
           className={`flex flex-col items-center justify-center w-full h-full ${activeTab === 'history' ? 'text-emerald-400' : 'text-[#71717a]'}`}
         >
           <History className="w-5 h-5 mb-1" />
           <span className="text-[9px] font-bold tracking-wider">Riwayat</span>
-        </button>
-
-        <button 
-          onClick={() => setActiveTab('login')} 
-          className={`flex flex-col items-center justify-center w-full h-full ${activeTab === 'login' ? 'text-emerald-400' : 'text-[#71717a]'}`}
-        >
-          <User className="w-5 h-5 mb-1" />
-          <span className="text-[9px] font-bold tracking-wider">{currentUser ? 'Broker' : 'Login'}</span>
         </button>
       </nav>
 
@@ -1745,13 +1538,13 @@ export default function POS() {
       {isQRISModalOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-[#030306]/75 backdrop-blur-sm" onClick={() => setIsQRISModalOpen(false)}></div>
-          <div className="relative w-full max-w-md bg-[#06060a] border border-[#1f1f2e] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col p-6 items-center text-center">
+          <div className="relative w-full max-w-md bg-[#06060a] border border-[#1f1f2e] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh]">
             
-            <div className="w-full flex justify-between items-center border-b border-[#1f1f2e]/60 pb-4 mb-4">
+            <div className="p-6 border-b border-[#1f1f2e]/60 flex justify-between items-center bg-[#06060a] shrink-0">
               <div className="flex items-center gap-2.5 text-left">
                 <QrCode className="w-6 h-6 text-emerald-400 animate-pulse" />
                 <div>
-                  <h3 className="font-display font-extrabold text-white leading-none">PEMBAYARAN QRIS TRANSAKSI</h3>
+                  <h3 className="font-display font-extrabold text-white leading-none text-xs sm:text-sm">PEMBAYARAN QRIS TRANSAKSI</h3>
                   <span className="text-[9px] text-[#52525b] font-black tracking-wider uppercase block mt-1">BROKER CLOUD VERIFIED</span>
                 </div>
               </div>
@@ -1760,30 +1553,32 @@ export default function POS() {
               </button>
             </div>
 
-            <div className="bg-emerald-500/5 rounded-xl px-4 py-2 text-xs font-bold text-emerald-400 mb-6 flex items-center gap-2 border border-emerald-500/20">
-              <Clock className="w-4 h-4 animate-spin text-emerald-400" />
-              Selesaikan Pembayaran dalam: <span className="font-mono text-sm text-glow-emerald">{formatTimer(qrisTimer)}</span>
-            </div>
+            <div className="p-6 overflow-y-auto flex-1 flex flex-col items-center text-center bg-black/10 hide-scrollbar space-y-6">
+              <div className="bg-emerald-500/5 rounded-xl px-4 py-2 text-xs font-bold text-emerald-400 w-full flex items-center justify-center gap-2 border border-emerald-500/20 shrink-0">
+                <Clock className="w-4 h-4 animate-spin text-emerald-400" />
+                Selesaikan Pembayaran dalam: <span className="font-mono text-sm text-glow-emerald">{formatTimer(qrisTimer)}</span>
+              </div>
 
-            <div className="bg-white p-3 rounded-2xl shadow-inner mb-6 relative group border border-emerald-500/25 max-h-[340px] overflow-hidden flex justify-center items-center">
-              <img 
-                src="/qris_merchant.png" 
-                alt="QRIS Merchant" 
-                className="max-h-[320px] w-auto object-contain rounded-xl"
-              />
-              <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none">
-                <span className="text-[10px] font-black text-black px-3 py-1.5 bg-emerald-400 rounded-lg shadow-md border border-emerald-500 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-black font-black" /> SCAN SECURE QRIS
-                </span>
+              <div className="bg-white p-3 rounded-2xl shadow-inner relative group border border-emerald-500/25 max-h-[280px] max-w-[280px] overflow-hidden flex justify-center items-center shrink-0">
+                <img 
+                  src="/qris_merchant.png" 
+                  alt="QRIS Merchant" 
+                  className="max-h-[260px] w-auto object-contain rounded-xl"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-xs opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none">
+                  <span className="text-[10px] font-black text-black px-3 py-1.5 bg-emerald-400 rounded-lg shadow-md border border-emerald-500 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-black font-black" /> SCAN SECURE QRIS
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1 shrink-0 w-full">
+                <span className="text-[8px] font-black text-[#52525b] uppercase tracking-wider block">TOTAL PEMBAYARAN</span>
+                <h2 className="text-3xl font-display font-black text-emerald-400 text-glow-emerald">{formatRupiah(finalTotal)}</h2>
               </div>
             </div>
 
-            <div className="mb-6 space-y-1">
-              <span className="text-[8px] font-black text-[#52525b] uppercase tracking-wider block">TOTAL PEMBAYARAN</span>
-              <h2 className="text-3xl font-display font-black text-emerald-400 text-glow-emerald">{formatRupiah(finalTotal)}</h2>
-            </div>
-
-            <div className="w-full space-y-3">
+            <div className="p-6 border-t border-[#1f1f2e]/60 bg-[#06060a] shrink-0 space-y-3">
               <button 
                 onClick={processCheckout}
                 className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs tracking-wider rounded-xl transition-all duration-300 shadow-md shadow-emerald-500/10 cursor-pointer flex items-center justify-center gap-2"
@@ -1959,184 +1754,194 @@ export default function POS() {
       {confirmModal.isOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-[#030306]/75 backdrop-blur-sm" onClick={() => setConfirmModal({ isOpen: false, type: null, id: null })}></div>
-          <div className={`relative w-full bg-[#06060a] border border-[#1f1f2e] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden p-6 ${confirmModal.type === 'checkout' ? 'max-w-2xl text-left' : 'max-w-sm text-center'}`}>
+          <div className={`relative w-full bg-[#06060a] border border-[#1f1f2e] rounded-3xl shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[90vh] ${confirmModal.type === 'checkout' ? 'max-w-2xl text-left' : 'max-w-sm text-center'}`}>
             
-            {confirmModal.type !== 'checkout' ? (
-              <>
-                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 text-red-500">
-                  <Trash2 className="w-8 h-8" />
+            {/* Header (only for checkout modal) */}
+            {confirmModal.type === 'checkout' && (
+              <div className="p-6 border-b border-[#1f1f2e]/60 flex justify-between items-center bg-[#06060a] shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <h3 className="text-sm font-display font-extrabold text-white uppercase tracking-wider">
+                    PROSES PEMBELIAN & CHECKOUT
+                  </h3>
                 </div>
-                
-                <h3 className="text-lg font-display font-extrabold text-white mb-2 uppercase tracking-wide">
-                  KONFIRMASI HAPUS
-                </h3>
-                
-                <p className="text-xs text-[#a1a1aa] leading-relaxed mb-6">
-                  {confirmModal.type === 'product' && 'Yakin ingin menghapus spesifikasi perangkat ini secara permanen dari katalog?'}
-                  {confirmModal.type === 'cart' && 'Yakin ingin membatalkan pembelian perangkat ini?'}
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="flex justify-between items-center border-b border-[#1f1f2e]/60 pb-3 mb-6">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <h3 className="text-sm font-display font-extrabold text-white uppercase tracking-wider">
-                      PROSES PEMBELIAN & CHECKOUT
-                    </h3>
-                  </div>
-                  <button 
-                    onClick={() => setConfirmModal({ isOpen: false, type: null, id: null })} 
-                    className="w-7 h-7 bg-[#0a0a0f] border border-[#1f1f2e] rounded-full flex items-center justify-center text-[#71717a] hover:text-white transition-colors cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Shipping Info Form Block */}
-                <div className="mb-5">
-                  <div className="flex items-center gap-2 text-white font-extrabold text-xs uppercase tracking-wider mb-3">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-                    Informasi Pengiriman
-                  </div>
-                  <div className="space-y-2.5">
-                    <div className="relative">
-                      <User className="absolute left-4 top-3 w-4 h-4 text-[#52525b]" />
-                      <input 
-                        required 
-                        type="text" 
-                        value={customerName}
-                        onChange={e => setCustomerName(e.target.value)}
-                        className="w-full bg-[#0a0a0f] border border-[#1f1f2e] focus:border-emerald-500/50 rounded-xl py-2.5 pl-11 pr-4 text-xs text-white placeholder-[#52525b] outline-none transition-all" 
-                        placeholder="Nama Lengkap Penerima" 
-                      />
-                    </div>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-3 w-4 h-4 text-[#52525b]" />
-                      <input 
-                        required 
-                        type="tel" 
-                        pattern="[0-9]*"
-                        inputMode="numeric"
-                        value={recipientPhone}
-                        onChange={e => setRecipientPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="w-full bg-[#0a0a0f] border border-[#1f1f2e] focus:border-emerald-500/50 rounded-xl py-2.5 pl-11 pr-4 text-xs text-white placeholder-[#52525b] outline-none transition-all" 
-                        placeholder="Nomor WhatsApp (Aktif)" 
-                      />
-                    </div>
-                    <div className="relative">
-                      <MapPin className="absolute left-4 top-3 w-4 h-4 text-[#52525b]" />
-                      <textarea 
-                        required 
-                        rows="2"
-                        value={recipientAddress}
-                        onChange={e => setRecipientAddress(e.target.value)}
-                        className="w-full bg-[#0a0a0f] border border-[#1f1f2e] focus:border-emerald-500/50 rounded-xl py-2.5 pl-11 pr-4 text-xs text-white placeholder-[#52525b] outline-none transition-all resize-none" 
-                        placeholder="Alamat Lengkap (Jalan, No. Rumah, Kota, Kode Pos)" 
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Courier Selection Block */}
-                <div className="mb-5">
-                  <div className="flex items-center gap-2 text-white font-extrabold text-xs uppercase tracking-wider mb-3">
-                    <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10M21 16v-4a1 1 0 00-.293-.707l-3-3A1 1 0 0017 8h-4v8m-4 0h12" />
-                    </svg>
-                    Pilih Ekspedisi
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {/* JNE */}
-                    <button 
-                      type="button"
-                      onClick={() => setSelectedCourier('JNE')}
-                      className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between h-24 relative overflow-hidden ${selectedCourier === 'JNE' ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.05)]' : 'bg-[#0a0a0f] border-[#1f1f2e] text-[#a1a1aa] hover:border-[#27272a]'}`}
-                    >
-                      <div className="space-y-0.5">
-                        <span className="font-extrabold text-[10px] block text-white uppercase tracking-wider">JNE Reguler (REG)</span>
-                        <span className="text-[8px] text-[#71717a] font-bold block">Estimasi 3-5 Hari</span>
-                      </div>
-                      <span className="font-display font-black text-xs text-emerald-400">Rp 50.000</span>
-                    </button>
-
-                    {/* J&T */}
-                    <button 
-                      type="button"
-                      onClick={() => setSelectedCourier('J&T')}
-                      className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between h-24 relative overflow-hidden ${selectedCourier === 'J&T' ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.05)]' : 'bg-[#0a0a0f] border-[#1f1f2e] text-[#a1a1aa] hover:border-[#27272a]'}`}
-                    >
-                      <div className="space-y-0.5">
-                        <span className="font-extrabold text-[10px] block text-white uppercase tracking-wider">J&T Express</span>
-                        <span className="text-[8px] text-[#71717a] font-bold block">Estimasi 1-2 Hari</span>
-                      </div>
-                      <span className="font-display font-black text-xs text-emerald-400">Rp 150.000</span>
-                    </button>
-
-                    {/* Indah Logistik */}
-                    <button 
-                      type="button"
-                      onClick={() => setSelectedCourier('Indah')}
-                      className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between h-24 relative overflow-hidden ${selectedCourier === 'Indah' ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.05)]' : 'bg-[#0a0a0f] border-[#1f1f2e] text-[#a1a1aa] hover:border-[#27272a]'}`}
-                    >
-                      <div className="space-y-0.5">
-                        <span className="font-extrabold text-[10px] block text-white uppercase tracking-wider">Indah Logistik</span>
-                        <span className="text-[8px] text-[#71717a] font-bold block">Estimasi 5-7 Hari</span>
-                      </div>
-                      <span className="font-display font-black text-xs text-emerald-400">Rp 350.000</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Kanal Deposit */}
-                <div className="mb-5">
-                  <div className="text-[9px] font-black text-[#52525b] uppercase tracking-wider mb-2.5">Pilih Kanal Deposit:</div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {['Cash', 'QRIS', 'Debit Card', 'Transfer'].map(method => (
-                      <button
-                        type="button"
-                        key={method}
-                        onClick={() => setPaymentMethod(method)}
-                        className={`py-2.5 px-2 rounded-xl text-[10px] font-extrabold border transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider ${paymentMethod === method ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 ring-1 ring-emerald-500' : 'bg-black border-[#1f1f2e] text-[#a1a1aa] hover:border-[#27272a] hover:text-white'}`}
-                      >
-                        {method === 'QRIS' && <QrCode className="w-3.5 h-3.5 text-emerald-400 animate-pulse animate-duration-1000" />}
-                        {method}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Summary Box */}
-                <div className="bg-[#0a0a0f] p-4 border border-[#1f1f2e]/60 rounded-2xl mb-6 flex justify-between items-center text-xs">
-                  <div className="space-y-0.5">
-                    <span className="text-[#71717a] font-semibold block">Subtotal Perangkat: {formatRupiah(total)}</span>
-                    <span className="text-[#71717a] font-semibold block">Ongkos Kirim ({selectedCourier}): {formatRupiah(shippingCost)}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[8px] font-black text-[#52525b] uppercase tracking-wider block">TOTAL PEMBAYARAN</span>
-                    <span className="font-display font-black text-emerald-400 text-glow-emerald text-base">{formatRupiah(finalTotal)}</span>
-                  </div>
-                </div>
-              </>
+                <button 
+                  onClick={() => setConfirmModal({ isOpen: false, type: null, id: null })} 
+                  className="w-7 h-7 bg-[#0a0a0f] border border-[#1f1f2e] rounded-full flex items-center justify-center text-[#71717a] hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
 
-            <div className="flex gap-3 text-xs shrink-0">
-              <button 
-                onClick={() => setConfirmModal({ isOpen: false, type: null, id: null })} 
-                className="flex-1 py-3 bg-[#0a0a0f] border border-[#1f1f2e] text-[#71717a] hover:text-white rounded-xl font-bold cursor-pointer"
-              >
-                Batal
-              </button>
-              <button 
-                onClick={handleConfirmAction} 
-                className={`flex-1 py-3 text-black font-extrabold tracking-wider rounded-xl transition-all shadow-lg cursor-pointer ${confirmModal.type === 'checkout' ? 'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/10' : 'bg-red-500 hover:bg-red-600 shadow-red-500/10 text-white'}`}
-              >
-                {confirmModal.type === 'checkout' ? 'YA, BELI SEKARANG' : 'YA, HAPUS'}
-              </button>
+            {/* Scrollable Body */}
+            <div className="p-6 overflow-y-auto flex-1 bg-black/10 hide-scrollbar">
+              {confirmModal.type !== 'checkout' ? (
+                <div className="py-4">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500/10 text-red-500">
+                    <Trash2 className="w-8 h-8" />
+                  </div>
+                  
+                  <h3 className="text-lg font-display font-extrabold text-white mb-2 uppercase tracking-wide">
+                    KONFIRMASI HAPUS
+                  </h3>
+                  
+                  <p className="text-xs text-[#a1a1aa] leading-relaxed mb-2 font-medium">
+                    {confirmModal.type === 'product' && 'Yakin ingin menghapus spesifikasi perangkat ini secara permanen dari katalog?'}
+                    {confirmModal.type === 'cart' && 'Yakin ingin membatalkan pembelian perangkat ini?'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6 text-xs">
+                  {/* Shipping Info Form Block */}
+                  <div>
+                    <div className="flex items-center gap-2 text-white font-extrabold text-xs uppercase tracking-wider mb-3">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                      Informasi Pengiriman
+                    </div>
+                    <div className="space-y-2.5">
+                      <div className="relative">
+                        <User className="absolute left-4 top-3 w-4 h-4 text-[#52525b]" />
+                        <input 
+                          required 
+                          type="text" 
+                          value={customerName}
+                          onChange={e => setCustomerName(e.target.value)}
+                          className="w-full bg-[#0a0a0f] border border-[#1f1f2e] focus:border-emerald-500/50 rounded-xl py-2.5 pl-11 pr-4 text-xs text-white placeholder-[#52525b] outline-none transition-all" 
+                          placeholder="Nama Lengkap Penerima" 
+                        />
+                      </div>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-3 w-4 h-4 text-[#52525b]" />
+                        <input 
+                          required 
+                          type="tel" 
+                          pattern="[0-9]*"
+                          inputMode="numeric"
+                          value={recipientPhone}
+                          onChange={e => setRecipientPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                          className="w-full bg-[#0a0a0f] border border-[#1f1f2e] focus:border-emerald-500/50 rounded-xl py-2.5 pl-11 pr-4 text-xs text-white placeholder-[#52525b] outline-none transition-all" 
+                          placeholder="Nomor WhatsApp (Aktif)" 
+                        />
+                      </div>
+                      <div className="relative">
+                        <MapPin className="absolute left-4 top-3 w-4 h-4 text-[#52525b]" />
+                        <textarea 
+                          required 
+                          rows="2"
+                          value={recipientAddress}
+                          onChange={e => setRecipientAddress(e.target.value)}
+                          className="w-full bg-[#0a0a0f] border border-[#1f1f2e] focus:border-emerald-500/50 rounded-xl py-2.5 pl-11 pr-4 text-xs text-white placeholder-[#52525b] outline-none transition-all resize-none" 
+                          placeholder="Alamat Lengkap (Jalan, No. Rumah, Kota, Kode Pos)" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Courier Selection Block */}
+                  <div>
+                    <div className="flex items-center gap-2 text-white font-extrabold text-xs uppercase tracking-wider mb-3">
+                      <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10M21 16v-4a1 1 0 00-.293-.707l-3-3A1 1 0 0017 8h-4v8m-4 0h12" />
+                      </svg>
+                      Pilih Ekspedisi
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {/* JNE */}
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedCourier('JNE')}
+                        className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between h-24 relative overflow-hidden ${selectedCourier === 'JNE' ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.05)]' : 'bg-[#0a0a0f] border-[#1f1f2e] text-[#a1a1aa] hover:border-[#27272a]'}`}
+                      >
+                        <div className="space-y-0.5">
+                          <span className="font-extrabold text-[10px] block text-white uppercase tracking-wider">JNE Reguler (REG)</span>
+                          <span className="text-[8px] text-[#71717a] font-bold block">Estimasi 3-5 Hari</span>
+                        </div>
+                        <span className="font-display font-black text-xs text-emerald-400">Rp 50.000</span>
+                      </button>
+
+                      {/* J&T */}
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedCourier('J&T')}
+                        className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between h-24 relative overflow-hidden ${selectedCourier === 'J&T' ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.05)]' : 'bg-[#0a0a0f] border-[#1f1f2e] text-[#a1a1aa] hover:border-[#27272a]'}`}
+                      >
+                        <div className="space-y-0.5">
+                          <span className="font-extrabold text-[10px] block text-white uppercase tracking-wider">J&T Express</span>
+                          <span className="text-[8px] text-[#71717a] font-bold block">Estimasi 1-2 Hari</span>
+                        </div>
+                        <span className="font-display font-black text-xs text-emerald-400">Rp 150.000</span>
+                      </button>
+
+                      {/* Indah Logistik */}
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedCourier('Indah')}
+                        className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between h-24 relative overflow-hidden ${selectedCourier === 'Indah' ? 'bg-emerald-500/10 border-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.05)]' : 'bg-[#0a0a0f] border-[#1f1f2e] text-[#a1a1aa] hover:border-[#27272a]'}`}
+                      >
+                        <div className="space-y-0.5">
+                          <span className="font-extrabold text-[10px] block text-white uppercase tracking-wider">Indah Logistik</span>
+                          <span className="text-[8px] text-[#71717a] font-bold block">Estimasi 5-7 Hari</span>
+                        </div>
+                        <span className="font-display font-black text-xs text-emerald-400">Rp 350.000</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Kanal Deposit */}
+                  <div>
+                    <div className="text-[9px] font-black text-[#52525b] uppercase tracking-wider mb-2.5">Pilih Kanal Deposit:</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {['Cash', 'QRIS', 'Debit Card', 'Transfer'].map(method => (
+                        <button
+                          type="button"
+                          key={method}
+                          onClick={() => setPaymentMethod(method)}
+                          className={`py-2.5 px-2 rounded-xl text-[10px] font-extrabold border transition-all flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider ${paymentMethod === method ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 ring-1 ring-emerald-500' : 'bg-black border-[#1f1f2e] text-[#a1a1aa] hover:border-[#27272a] hover:text-white'}`}
+                        >
+                          {method === 'QRIS' && <QrCode className="w-3.5 h-3.5 text-emerald-400 animate-pulse animate-duration-1000" />}
+                          {method}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Summary Box */}
+                  <div className="bg-[#0a0a0f] p-4 border border-[#1f1f2e]/60 rounded-2xl mb-2 flex justify-between items-center text-xs">
+                    <div className="space-y-0.5">
+                      <span className="text-[#71717a] font-semibold block">Subtotal Perangkat: {formatRupiah(total)}</span>
+                      <span className="text-[#71717a] font-semibold block">Ongkos Kirim ({selectedCourier}): {formatRupiah(shippingCost)}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[8px] font-black text-[#52525b] uppercase tracking-wider block">TOTAL PEMBAYARAN</span>
+                      <span className="font-display font-black text-emerald-400 text-glow-emerald text-base">{formatRupiah(finalTotal)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Sticky Footer */}
+            <div className="p-6 border-t border-[#1f1f2e]/60 bg-[#06060a] shrink-0">
+              <div className="flex gap-3 text-xs">
+                <button 
+                  onClick={() => setConfirmModal({ isOpen: false, type: null, id: null })} 
+                  className="flex-1 py-3 bg-[#0a0a0f] border border-[#1f1f2e] text-[#71717a] hover:text-white rounded-xl font-bold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={handleConfirmAction} 
+                  className={`flex-1 py-3 text-black font-extrabold tracking-wider rounded-xl transition-all shadow-lg cursor-pointer ${confirmModal.type === 'checkout' ? 'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/10' : 'bg-red-500 hover:bg-red-600 shadow-red-500/10 text-white'}`}
+                >
+                  {confirmModal.type === 'checkout' ? 'YA, BELI SEKARANG' : 'YA, HAPUS'}
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
